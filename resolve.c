@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <net/if.h>
+#include <netdb.h>
 
 #include "dns_sd.h"
 
@@ -33,7 +34,7 @@ void customBrowseReply( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t int
 
     discoveredName=malloc(strlen(serviceName)+1);
     strcpy(discoveredName, serviceName);
-    
+
     discoveredRegtype=malloc(strlen(regtype)+1);
     strcpy(discoveredRegtype, regtype);
     
@@ -47,18 +48,29 @@ void customResolveReply( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t in
 			    uint16_t txtLen, const unsigned char *txtRecord, void *context)
 {
 
-    printf("In ResolveReply callback!!\n");
+    struct hostent *hostInfo;
+    struct in_addr *serv_addr;
 
-    printf("full name: %s\n", fullname);
-    printf("host target: %s\n", hosttarget);
-    printf("port: %d\n", endianChange(port));
-    printf("txtLen: %d\n", txtLen);
 
-    char *temp=malloc(txtLen+1);
-    strncpy(temp, txtRecord, txtLen);
-    temp[txtLen]='\0';
-    printf("txtRecord: %s\n", txtRecord);
+    if ( (hostInfo=gethostbyname(hosttarget))== NULL){
+	printf("Call gethostbyname ERROR!!");
+	
+    }else{
+	serv_addr=(struct in_addr *) hostInfo->h_addr_list[0]; 	
 
+	printf("In ResolveReply callback!!\n");
+	printf("full name: %s\n", fullname);
+	printf("host target: %s\n", hosttarget);
+	printf("host ip addr: %s\n", inet_ntoa(*serv_addr));
+	printf("port: %d\n", endianChange(port));
+	printf("txtLen: %d\n", txtLen);
+
+	char *temp=malloc(txtLen+1);
+	strncpy(temp, txtRecord, txtLen);
+	temp[txtLen]='\0';
+	printf("txtRecord: %s\n", temp);
+
+    }
 
 }
 
