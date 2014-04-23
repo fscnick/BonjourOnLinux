@@ -5,9 +5,28 @@
 #include "dns_sd.h"
 
 
+struct BrowseReplyData{
+    DNSServiceErrorType errorCode;
+    char *serviceName;
+    char *regType;
+    char *replyDomain;
+    };
+
 void customBrowseReply( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode,
 			    const char *serviceName, const char *regtype, const char *replyDomain, void *context)
 {
+	// init BrowseReplyData
+    struct BrowseReplyData *replyData=context;
+    replyData->errorCode=errorCode;
+    replyData->serviceName=malloc(strlen(serviceName)+1);
+    replyData->regType=malloc(strlen(regtype)+1);
+    replyData->replyDomain=malloc(strlen(replyDomain)+1);
+	
+	strcpy(replyData->serviceName, serviceName);
+	strcpy(replyData->regType, regtype);
+	strcpy(replyData->replyDomain, replyDomain);
+
+
     printf("In BrowseReply callback!!\n");
     if(flags == kDNSServiceFlagsMoreComing){
 	printf("flag: kDNSServiceFlagsMoreComing\n");
@@ -30,6 +49,8 @@ int main(int argc, char* argv[])
     DNSServiceRef ref;
     DNSServiceErrorType result;
     DNSServiceFlags nativeFlag=0;
+	
+	struct BrowseReplyData *replyData;
 
     int port = 11234;
     char* serviceType="_personal._tcp";
@@ -50,7 +71,7 @@ int main(int argc, char* argv[])
 			serviceType,
 			NULL,	/* domain */
 			&customBrowseReply,	/* callback */
-			NULL	/* context, user-defined that will be an argument of callback */
+			replyData	/* context, user-defined that will be an argument of callback */
 			);
 
     if (result == kDNSServiceErr_NoError){
@@ -67,10 +88,12 @@ int main(int argc, char* argv[])
 
 
     if (result == kDNSServiceErr_NoError){
-	printf("Browse response success!!\n");	
+		printf("Browse response success!!\n");	
+	
+		printf("%s %s %s\n", replyData->serviceName, replyData->regType, replyData->replyDomain);
     }else{
-	printf("Browse response fail!!\n");
-	printf("Error code: %d\n", result);
+		printf("Browse response fail!!\n");
+		printf("Error code: %d\n", result);
     	return 1;
     }
 
